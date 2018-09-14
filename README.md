@@ -4,10 +4,11 @@ Using latest C++ language features, provide GLSL vector swizzling in compile tim
 # Swizzling in GLSL
 GLSL offers 'swizzling' on vector types. E.G.
 
-`
+```
 vec3 myVec(24, 34, 5);
+
 vec4 otherVec = myVec.xxyz; // Returns (24, 24, 34, 5)
-`
+```
 
 This allows vectors to be dymnamically made from other vector sizes from a supplied order of variables in a row. 
 
@@ -22,10 +23,10 @@ Using the literal operator we can return a function that takes in a constant str
 
 The end result is so:
 
-`
+```
 Vec3 myVec{1, 2, 80};
 Vec4 otherVec = "xxyz"_swizzle(myVec);
 
 std::cout << "(" << otherVec.x << ", " << otherVec.y << ", " << otherVec.z << ", " << otherVec.w << ")";
 // (1, 1, 2, 80)
-`
+```
