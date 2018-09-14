@@ -30,5 +30,10 @@ Vec4 otherVec = "xxyz"_swizzle(myVec);
 print(otherVec);
 // (1, 1, 2, 80)
 
+Vec2 smallVec = "ww"_swizzle(otherVec);
+
+print(smallVec);
+// (80, 80)
+
 Vec2 failVec = "wzzx"_swizzle(otherVec); // error Vec4 returned does not match target type Vec2
 ```
