@@ -1,22 +1,15 @@
 /*
 Author: TheMaverickProgrammer
-9/14/2018
+1/18/2020
+
+Try it on godbolt!
+https://godbolt.org/z/ecxidZ
 */
 
 #include <iostream>
-#include <type_traits>
+#include <cstring>
+#include <array>
 
-////ConstantString library
-template <typename CharT, CharT...chars>
-constexpr auto operator "" _cs()
-{
-    return []() constexpr
-    { 
-        return (const char []){chars..., '\0'};
-    };
-}
-
-////vec library
 //vec types
 struct Vec1 {float x;};
 struct Vec2 {float x, y;};
@@ -28,15 +21,15 @@ template <typename T>
 constexpr size_t getElementCount()
 {
     if constexpr(std::is_same<T, Vec1>::value)
-        return 1;
+        return 1u;
     else if constexpr(std::is_same<T, Vec2>::value)
-        return 2;
+        return 2u;
     else if constexpr(std::is_same<T, Vec3>::value)
-        return 3;
+        return 3u;
     else if constexpr(std::is_same<T, Vec4>::value)
-        return 4;
+        return 4u;
     else 
-        std::terminate();
+        return SIZE_MAX;
 }
 
 //vec type helper for meta programming: get x y z or w element based on index
@@ -51,59 +44,57 @@ constexpr float getElement(TVec v)
         return v.y;
     else if constexpr(i == 2)
         return v.z;
-    else if constexpr(i == 3)
+    else // we asserted before, this must be i == 3
         return v.w;
-    else
-        std::terminate();
 }
 
 //helper to convert swizzle char into index. i.e. x -> 0, y -> 1  etc
 constexpr size_t vecCharToIndex(char c)
 {
     if(c == 'x')
-        return 0;
+        return 0u;
     else if(c == 'y')
-        return 1;
+        return 1u;
     else if(c == 'z')
-        return 2;
+        return 2u;
     else if(c == 'w')
-        return 3;
+        return 3u;
     else
-        std::terminate();
+        return SIZE_MAX;
 }
 
 //returns true if the given swizzle string is validly formatted - packaged as constexpr lambda
 template <typename ConstantStringHolder>
-constexpr bool isValidSwizzleString(ConstantStringHolder holder)
+constexpr size_t isValidSwizzleString(ConstantStringHolder holder)
 {
-    constexpr std::string_view string = holder();
-    constexpr size_t length = string.size();
+    constexpr std::array string = holder();
+    constexpr size_t length = std::size(string)-1u;
 
     //length must be between 1 and 4 swizzle characters
-    if(length < 1 || length > 4)
-        return false;
+    if(length < 1u || length > 4u)
+        return 0u;
 
     //only xyzw allowed
     for(size_t i = 0; i < length; ++i)
     {
         char current = string[i];
         if(current != 'x' && current != 'y' && current != 'z' && current != 'w')
-            return false;
+            return 0u;
     }
 
     //must end with null terminator
     if(string[length] != '\0')
-        return false;
+        return 0u;
 
-    return true;
+    return 1u;
 }
 
 //returns the largest swizzle-index of a swizzle string. i.e. "xzxx" will return 2 since x is 0 and z is 2 and z is largest - packaged as constexpr lambda
 template <typename ConstantStringHolder>
 constexpr size_t getLargestSwizzleIndex(ConstantStringHolder holder)
 {
-    constexpr std::string_view string = holder();
-    constexpr size_t length = string.size();
+    constexpr std::array string = holder();
+    constexpr size_t length = std::size(string)-1u;
 
     size_t largest = 0;
 
@@ -122,12 +113,12 @@ constexpr size_t getLargestSwizzleIndex(ConstantStringHolder holder)
 template <typename ConstantStringHolder, typename Vec>
 constexpr auto swizzleDo(ConstantStringHolder holder, Vec vec) -> auto
 {
+    constexpr std::array string = holder();
     constexpr size_t elementCount = getElementCount<Vec>();
-    static_assert(isValidSwizzleString(holder), "invalid swizzle string");
+    static_assert(isValidSwizzleString(holder) == 1u, "invalid swizzle string");
     static_assert(getLargestSwizzleIndex(holder) < getElementCount<Vec>(), "swizzle characters out of range of given vec");
 
-    constexpr std::string_view string = holder();
-    constexpr size_t swizzleCount = string.size();
+    constexpr size_t swizzleCount = std::size(string)-1u;
 
     if constexpr (swizzleCount == 1)
         return Vec1{
@@ -162,7 +153,8 @@ constexpr auto operator "" _swizzle()
 {
     return [](auto vec) constexpr -> auto
     { 
-        return swizzleDo([](){return (const char[]){chars..., '\0'};}, vec);
+        constexpr auto retfunc = []() constexpr -> std::array<char, sizeof...(chars)+1u> { return {chars..., '\0'}; };
+        return swizzleDo(retfunc, vec);
     };
 }
 
@@ -175,7 +167,7 @@ int main() {
 
   Vec3 myVec3{x, y, z};
 
-  Vec4 myVec4 = "xxzy"_swizzle(myVec3); //with lambda
+  Vec4 myVec4 = "xyyx"_swizzle(myVec3); // string lit. op w/ lambda
 
   x = myVec4.x;
   y = myVec4.y;
