@@ -48,6 +48,4 @@ Vec2 failVec = "wzzx"_swizzle(otherVec); // error Vec4 returned does not match t
 # Notes
 The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension. If on Clang, use `-Wgnu-string-literal-operator-template`
 
-Toggle MSVC and see that the microsoft compiler diverges from the others regarding string literal usage and doesn't enable this type of exploitation by restricting the input for the operator as the function argument list only. 
-
-While the C++-idiomatic way of doing things is not as nice looking as other languages, we've achieved the very same thing GLSL does.
+Toggle MSVC and see that the microsoft compiler diverges from the others regarding this behavior and seems to prevent this type of exploitation by restricting the input for the operator as the function argument list only. 
