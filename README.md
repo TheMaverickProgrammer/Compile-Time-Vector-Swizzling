@@ -1,5 +1,5 @@
 # Compile Time Vector Swizzling In C++
-By using C++17's constexpr if-statements and exploiting the string literal operator, provide GLSL vector swizzling in compile time for Clang and GNU compilers
+By using C++17's constexpr if-statements and exploiting the string literal operator for GCC, provide GLSL vector swizzling in compile time for Clang (with extensions) and GNU compilers
 
 [Example on godbolt!](https://godbolt.org/z/ecxidZ)
 
@@ -73,4 +73,4 @@ This looks much nicer and might be a small price to pay.
 # Notes
 The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension. If on Clang, use `-Wgnu-string-literal-operator-template`
 
-Toggle MSVC and see that the microsoft compiler diverges from the others regarding this behavior and seems to prevent this type of exploitation by restricting the input for the operator as the function argument list only. 
+Toggle MSVC and see that it does not support this language extension like clang does. We can only wait for C++20's Non-Type Paramter support for strings to get this working across all platforms.
