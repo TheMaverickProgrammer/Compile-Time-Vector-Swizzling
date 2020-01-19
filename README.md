@@ -1,7 +1,9 @@
 # Compile Time Vector Swizzling In C++
 By using C++17's constexpr if-statements and exploiting the string literal operator, provide GLSL vector swizzling in compile time for Clang and GNU compilers
 
-[Try it on godbolt!](https://godbolt.org/z/ecxidZ)
+[Example on godbolt!](https://godbolt.org/z/ecxidZ)
+
+[Ex 2: Macros make it look more native](https://godbolt.org/z/z45Ug8)
 
 See #Notes about MSVC
 
@@ -28,7 +30,7 @@ This solution...
 Using variadic templates and constant expressions (constexpr) we can reduce the string used to compile time and determine if the correct properties are supplied.
 Using the literal string `""_` operator we can return a function that takes in a constant string and returns any vector size from the input.
 
-The end result is so:
+The end result is [on godbolt](https://godbolt.org/z/ecxidZ)
 
 ```
 Vec3 myVec{1, 2, 80};
@@ -44,6 +46,29 @@ print(smallVec);
 
 Vec2 failVec = "wzzx"_swizzle(otherVec); // error Vec4 returned does not match target type Vec2
 ```
+
+If we introduce macros 😱 (just for this case!) we can hide away the ugliness through a member function inherited by a base-trait class. [Visit godbolt](https://godbolt.org/z/z45Ug8)
+
+```
+volatile float x = 10.0f;
+volatile float y = 20.0f;
+volatile float z = 30.0f;
+volatile float w = 40.0f;
+
+int main() {
+
+  Vec3 myVec3{x, y, z};
+
+  Vec4 myVec4 = myVec3.swizzle(xyyz);
+
+  x = myVec4.x;
+  y = myVec4.y;
+  z = myVec4.z;
+  w = myVec4.w;
+}
+```
+
+This looks much nicer and might be a small price to pay.
 
 # Notes
 The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension. If on Clang, use `-Wgnu-string-literal-operator-template`
