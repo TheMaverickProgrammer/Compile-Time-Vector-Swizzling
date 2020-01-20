@@ -71,6 +71,6 @@ int main() {
 This looks much nicer and might be a small price to pay.
 
 # Notes
-The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension. If on Clang, use `-Wgnu-string-literal-operator-template`
+The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension only. If on Clang, use `-Wgnu-string-literal-operator-template`
 
-Toggle MSVC and see that it does not support this language extension like clang does. We can only wait for C++20's Non-Type Paramter support for strings to get this working across all platforms.
+Toggle MSVC and see that it does not support this language extension like clang does. We can only wait and hope that C++20's Non-Type Parameter support for strings can enable this across all platforms.
