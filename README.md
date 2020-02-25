@@ -1,5 +1,5 @@
 # Compile Time Vector Swizzling In C++
-By using C++17's constexpr if-statements and exploiting the string literal operator for GCC, provide GLSL vector swizzling in compile time for Clang (with extensions) and GNU compilers
+By using C++17's constexpr if-statements provide GLSL vector swizzling in compile time for Clang, MSVC, and GNU compilers
 
 [Example on godbolt!](https://godbolt.org/z/ecxidZ)
 
@@ -27,27 +27,6 @@ This solution...
 3) Because of #2, mismatched types will fail silently, and does not give us meaningful error messages.
 
 # Swizzling in Modern C++
-Using variadic templates and constant expressions (constexpr) we can reduce the string used to compile time and determine if the correct properties are supplied.
-Using the literal string `""_` operator we can return a function that takes in a constant string and returns any vector size from the input.
-
-The end result is [on godbolt](https://godbolt.org/z/ecxidZ)
-
-```
-Vec3 myVec{1, 2, 80};
-Vec4 otherVec = "xxyz"_swizzle(myVec);
-
-print(otherVec);
-// (1, 1, 2, 80)
-
-Vec2 smallVec = "ww"_swizzle(otherVec);
-
-print(smallVec);
-// (80, 80)
-
-Vec2 failVec = "wzzx"_swizzle(otherVec); // error Vec4 returned does not match target type Vec2
-```
-
-If we introduce macros 😱 (just for this case!) we can hide away the ugliness through a member function inherited by a base-trait class. [Visit godbolt](https://godbolt.org/z/z45Ug8)
 
 ```
 volatile float x = 10.0f;
@@ -68,9 +47,6 @@ int main() {
 }
 ```
 
-This looks much nicer and might be a small price to pay.
+This looks much nicer and one macro might be a small price to pay. If you're against using macros, just pass a string:
 
-# Notes
-The `auto` return type for the literal string operator is a nice feature to have and enables us to return exact types, however is available as a GNU extension only. If on Clang, use `-Wgnu-string-literal-operator-template`
-
-Toggle MSVC and see that it does not support this language extension like clang does. We can only wait and hope that C++20's Non-Type Parameter support for strings can enable this across all platforms.
+`Vec4 myVec4 = myVec3.swizzle("xyyz");`
