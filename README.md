@@ -41,6 +41,4 @@ int main() {
 }
 ```
 
-This looks much nicer and one macro might be a small price to pay. If you're against using macros, just pass a string:
-
-`Vec4 myVec4 = myVec3.swizzle("xyyz");`
+This looks much nicer and one macro might be a small price to pay.
