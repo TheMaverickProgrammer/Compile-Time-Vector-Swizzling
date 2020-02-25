@@ -1,9 +1,13 @@
 /*
 Author: TheMaverickProgrammer
-1/18/2020
+2/24/2020
 
 Try it on godbolt!
-https://godbolt.org/z/ecxidZ
+https://godbolt.org/z/GDHrJe
+*/
+/*
+Author: TheMaverickProgrammer
+9/14/2018
 */
 
 #include <iostream>
@@ -11,15 +15,41 @@ https://godbolt.org/z/ecxidZ
 #include <array>
 
 //vec types
-struct Vec1 {float x;};
-struct Vec2 {float x, y;};
-struct Vec3 {float x, y, z;};
-struct Vec4 {float x, y, z, w;};
+template<typename T>
+struct swizzle_trait {
+    using ParentT = T;    
+    ParentT* parent;
+
+    swizzle_trait(ParentT* p) : parent(p){}
+ 
+    template<typename Holder>
+    constexpr auto swizzle(Holder holder);
+};
+
+struct Vec1 : swizzle_trait<Vec1> {
+    float x;
+    
+    Vec1(float x) : x(x), swizzle_trait<Vec1>(this) { }
+};
+struct Vec2 : swizzle_trait<Vec2> {
+    float x, y;
+    
+    Vec2(float x, float y) : x(x), y(y), swizzle_trait<Vec2>(this) { }
+};
+struct Vec3 : swizzle_trait<Vec3> {
+    float x, y, z;
+    
+    Vec3(float x, float y, float z) : x(x), y(y), z(z), swizzle_trait<Vec3>(this) { }
+};
+struct Vec4 : swizzle_trait<Vec4> {
+    float x, y, z, w;
+
+    Vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w), swizzle_trait<Vec4>(this) { }
+};
 
 //vec type helper for meta programming: get amount of elements in vec
 template <typename T>
-constexpr size_t getElementCount()
-{
+constexpr size_t getElementCount() {
     if constexpr(std::is_same<T, Vec1>::value)
         return 1u;
     else if constexpr(std::is_same<T, Vec2>::value)
@@ -34,8 +64,7 @@ constexpr size_t getElementCount()
 
 //vec type helper for meta programming: get x y z or w element based on index
 template <size_t i, typename TVec>
-constexpr float getElement(TVec v)
-{
+constexpr float getElement(TVec v) {
     static_assert(i < getElementCount<TVec>(), "error too big size given");
 
     if constexpr(i == 0)
@@ -49,8 +78,7 @@ constexpr float getElement(TVec v)
 }
 
 //helper to convert swizzle char into index. i.e. x -> 0, y -> 1  etc
-constexpr size_t vecCharToIndex(char c)
-{
+constexpr size_t vecCharToIndex(char c) {
     if(c == 'x')
         return 0u;
     else if(c == 'y')
@@ -65,36 +93,29 @@ constexpr size_t vecCharToIndex(char c)
 
 //returns true if the given swizzle string is validly formatted - packaged as constexpr lambda
 template <typename ConstantStringHolder>
-constexpr size_t isValidSwizzleString(ConstantStringHolder holder)
-{
-    constexpr std::array string = holder();
-    constexpr size_t length = std::size(string)-1u;
+constexpr size_t isValidSwizzleString(ConstantStringHolder holder) {
+    constexpr auto string = holder();
+    constexpr size_t length = string.size();
 
     //length must be between 1 and 4 swizzle characters
     if(length < 1u || length > 4u)
         return 0u;
 
     //only xyzw allowed
-    for(size_t i = 0; i < length; ++i)
-    {
+    for(size_t i = 0; i < length; ++i) {
         char current = string[i];
         if(current != 'x' && current != 'y' && current != 'z' && current != 'w')
             return 0u;
     }
-
-    //must end with null terminator
-    if(string[length] != '\0')
-        return 0u;
 
     return 1u;
 }
 
 //returns the largest swizzle-index of a swizzle string. i.e. "xzxx" will return 2 since x is 0 and z is 2 and z is largest - packaged as constexpr lambda
 template <typename ConstantStringHolder>
-constexpr size_t getLargestSwizzleIndex(ConstantStringHolder holder)
-{
-    constexpr std::array string = holder();
-    constexpr size_t length = std::size(string)-1u;
+constexpr size_t getLargestSwizzleIndex(ConstantStringHolder holder) {
+    constexpr auto string = holder();
+    constexpr size_t length = string.size();
 
     size_t largest = 0;
 
@@ -108,17 +129,15 @@ constexpr size_t getLargestSwizzleIndex(ConstantStringHolder holder)
     return largest;
 }
 
-
 //swizzles!!!!! fully compile time validated. takes swizzle string packaged as constexpr lambda
 template <typename ConstantStringHolder, typename Vec>
-constexpr auto swizzleDo(ConstantStringHolder holder, Vec vec) -> auto
-{
-    constexpr std::array string = holder();
+constexpr auto swizzleDo(ConstantStringHolder holder, Vec vec) -> auto {
+    constexpr auto string = holder();
     constexpr size_t elementCount = getElementCount<Vec>();
     static_assert(isValidSwizzleString(holder) == 1u, "invalid swizzle string");
     static_assert(getLargestSwizzleIndex(holder) < getElementCount<Vec>(), "swizzle characters out of range of given vec");
 
-    constexpr size_t swizzleCount = std::size(string)-1u;
+    constexpr size_t swizzleCount = string.size();
 
     if constexpr (swizzleCount == 1)
         return Vec1{
@@ -148,15 +167,28 @@ constexpr auto swizzleDo(ConstantStringHolder holder, Vec vec) -> auto
     }
 }
 
-template <typename CharT, CharT...chars>
-constexpr auto operator "" _swizzle()
-{
-    return [](auto vec) constexpr -> auto
-    { 
-        constexpr auto retfunc = []() constexpr -> std::array<char, sizeof...(chars)+1u> { return {chars..., '\0'}; };
-        return swizzleDo(retfunc, vec);
-    };
+class str_const {
+    const char* const p_;
+    const std::size_t sz_;
+public:
+    template <std::size_t N>
+    constexpr str_const(const char(&a)[N]) : p_(a), sz_(N-1) {}
+    constexpr char operator[](const std::size_t& n) const {
+        return n < sz_ ? p_[n] : throw std::out_of_range("");
+    }
+    constexpr std::size_t size() const {
+        return sz_;
+    }
+};
+
+template<typename T>
+template<typename Holder>
+constexpr auto swizzle_trait<T>::swizzle(Holder holder) {
+    return swizzleDo(holder, *parent);
 }
+
+#define flatten(x, y) x ## y
+#define swizzle(str) swizzle([]() constexpr -> str_const { return #str; })
 
 volatile float x = 10.0f;
 volatile float y = 20.0f;
@@ -167,7 +199,7 @@ int main() {
 
   Vec3 myVec3{x, y, z};
 
-  Vec4 myVec4 = "xyyx"_swizzle(myVec3); // string lit. op w/ lambda
+  Vec4 myVec4 = myVec3.swizzle(xyyz);
 
   x = myVec4.x;
   y = myVec4.y;
