@@ -1,12 +1,6 @@
 # Compile Time Vector Swizzling In C++
 By using C++17's constexpr if-statements provide GLSL vector swizzling in compile time for Clang, MSVC, and GNU compilers
 
-[Example on godbolt!](https://godbolt.org/z/ecxidZ)
-
-[Ex 2: Macros make it look more native](https://godbolt.org/z/z45Ug8)
-
-See #Notes about MSVC
-
 # Swizzling in GLSL
 GLSL offers 'swizzling' on vector types. E.G.
 
